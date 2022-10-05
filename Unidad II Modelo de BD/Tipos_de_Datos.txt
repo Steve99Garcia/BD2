@@ -1,0 +1,1 @@
+https://docs.microsoft.com/es-es/sql/t-sql/data-types/data-types-transact-sql?view=sql-server-ver15
