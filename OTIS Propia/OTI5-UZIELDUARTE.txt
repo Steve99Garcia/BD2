@@ -1,0 +1,161 @@
+/* a) Realizar un procedimiento almacenado que reciba como 
+parámetro el año. Determinar la recaudación más alta por 
+empleado y por cada mes. Visualizando el año, mes, recaudación, 
+EmployeeID, Nombre Empleado.
+*/
+CREATE PROCEDURE recaudacionMasAltaEM @anio int
+AS
+	SELECT * FROM(
+	SELECT '' + @anio Anio ,*, RANK() OVER (PARTITION BY Mes ORDER BY [Recaudacion mensual] DESC) C
+	FROM
+	(SELECT MONTH(O.OrderDate) Mes, SUM(OD.UnitPrice * OD.Quantity) [Recaudacion mensual], E.EmployeeID ID, E.LastName Apellido
+	FROM Orders O
+	JOIN Employees E ON E.EmployeeID = O.EmployeeID
+	JOIN [Order Details] OD ON OD.OrderID = O.OrderID
+	WHERE YEAR(OrderDate) = @anio
+	GROUP BY MONTH(O.OrderDate), E.LastName, E.EmployeeID) TEMP) AUX
+	WHERE AUX.C = 1
+
+EXEC recaudacionMasAltaEM 1997
+
+SELECT DISTINCT YEAR(OrderDate)
+FROM Orders
+
+/* b) Realizar un procedimiento almacenado que reciba como 
+parámetro el nombre del mes y el año. Indicar el nombre del 
+producto y cantidad de unidades vendida que haya obtenido la 
+tercera posición en *montos de ventas*. Visualizando el IdProducto, 
+Nombre del Producto y Cantidades Vendidas.
+*/
+CREATE PROCEDURE tercerPosProducto @mes int, @anio int
+AS
+	SELECT  *
+	FROM    (
+				SELECT  *,
+						ROW_NUMBER() OVER(ORDER BY [Monto de ventas] DESC) RowID
+				FROM    (SELECT P.ProductID, P.ProductName, SUM(OD.Quantity) Quantity, SUM(OD.Quantity * OD.UnitPrice) [Monto de ventas]
+						FROM Orders O
+						JOIN [Order Details] OD ON OD.OrderID = O.OrderID
+						JOIN Products P ON P.ProductID = OD.ProductID
+						WHERE YEAR(OrderDate) = @anio AND MONTH(OrderDate) = @mes
+						GROUP BY P.ProductID, P.ProductName) TEMP
+			) sub
+	WHERE   RowID = 3
+
+EXEC tercerPosProducto 7, 1996
+
+-- c) Calcular las recaudaciones por año y por trimestre
+SELECT YEAR(O.OrderDate) Anio, DATEPART(QUARTER, O.OrderDate) Trimestre, SUM(OD.UnitPrice * OD.Quantity - (OD.UnitPrice * OD.Quantity * OD.Discount)) Recaudacion
+FROM Orders O
+JOIN [Order Details] OD ON OD.OrderID = O.OrderID
+GROUP BY YEAR(O.OrderDate), DATEPART(QUARTER, O.OrderDate)
+ORDER BY YEAR(O.OrderDate)
+
+/*d) Tomando de referencia el ejercicio anterior, presentar 
+únicamente los trimestres cuya recaudación sea mayor a
+140,000.00
+*/
+SELECT YEAR(O.OrderDate) Anio, DATEPART(QUARTER, O.OrderDate) Trimestre, SUM(OD.UnitPrice * OD.Quantity - (OD.UnitPrice * OD.Quantity * OD.Discount)) Recaudacion
+FROM Orders O
+JOIN [Order Details] OD ON OD.OrderID = O.OrderID
+GROUP BY YEAR(O.OrderDate), DATEPART(QUARTER, O.OrderDate)
+HAVING SUM(OD.UnitPrice * OD.Quantity - (OD.UnitPrice * OD.Quantity * OD.Discount)) > 140000.00
+ORDER BY YEAR(O.OrderDate)
+
+-- e) Calcular las recaudaciones por año y por mes.
+SELECT YEAR(O.OrderDate) Anio, DateName( month , DateAdd( month , MONTH(O.OrderDate) , 0 ) - 1 ) Mes, SUM(OD.UnitPrice * OD.Quantity - (OD.UnitPrice * OD.Quantity * OD.Discount)) Recaudacion
+FROM Orders O
+JOIN [Order Details] OD ON OD.OrderID = O.OrderID
+GROUP BY YEAR(O.OrderDate), DateName( month , DateAdd( month , MONTH(O.OrderDate) , 0 ) - 1 )
+ORDER BY YEAR(O.OrderDate)
+
+/*f) Calcular el promedio de recaudación por año. Consistirá en la
+sumatoria de recaudaciones por mes divididas entre el número de 
+meses en las que hubo recaudación.
+*/
+SELECT Anio, AVG([Importe mensual]) [Promedio de Recaudacion Anual]
+FROM (SELECT YEAR(O.OrderDate) Anio, MONTH(O.OrderDate) Mes, SUM(OD.UnitPrice * OD.Quantity - (OD.UnitPrice * OD.Quantity * OD.Discount)) [Importe mensual]
+		FROM Orders O
+		JOIN [Order Details] OD
+		ON O.OrderID = OD.OrderID
+		GROUP BY MONTH(O.OrderDate), YEAR(O.OrderDate)) TEMP
+GROUP BY Anio
+
+/*g) Utilizando SubConsulta Escalar, presentar la siguiente información: IdProducto, ProductName, CantidadVendida:
+Sumatoria de las cantidades vendidas del producto; CantidadÓrdenes: Cantidad de órdenes en la que el producto ha
+sido vendido; CantidadDescuento: Cantidad de órdenes en la que el producto ha recibido descuento; CantidadSinDescuento:
+Cantidad de órdenes en la que el producto no ha recibido descuento.
+*/
+
+SELECT P.ProductID, P.ProductName, SUM(OD.Quantity) [Cantidad de vendida], COUNT(OD.ProductID) [Cantidad de ordenes], COUNT(CASE OD.Discount WHEN 0 THEN NULL ELSE 1 END) [Cant. ordenes con desc.], COUNT(CASE OD.Discount WHEN 0 THEN 1 ELSE NULL END) [Cant. ordenes sin desc.]
+FROM Orders O
+JOIN [Order Details] OD ON OD.OrderID = O.OrderID
+JOIN Products P ON P.ProductID = OD.ProductID
+GROUP BY P.ProductID, P.ProductName
+ORDER BY SUM(OD.Quantity) DESC
+
+/* h) Utilizando Inner Join establecer un análisis de venta por cada uno de los empleados de la organización: EmployeeID, 
+NombreCompleto: Nombre + Apellido, EdadEmpleado, Cantidad: Cantidad de órdenes atendidas, CantidadPaíses: Cantidad de
+Países atendidos, CantidadClientes: CantidadClientes, VentasEmpleado: Monto por ventas incluyendo descuentos por empleado
+*/
+SELECT E.EmployeeID, E.FirstName + E.LastName [Nombre completo], (YEAR(GETDATE()) - YEAR(E.BirthDate)) [Edad], COUNT(DISTINCT O.OrderID) Cantidad, COUNT(DISTINCT C.Country) [Cantidad de paises], COUNT(DISTINCT C.CustomerID) [Cantidad de clientes], SUM(OD.UnitPrice * OD.Quantity - (OD.UnitPrice * OD.Quantity * OD.Discount)) [Ventas empleado]
+FROM Orders O
+INNER JOIN [Order Details] OD ON O.OrderID = OD.OrderID
+INNER JOIN Employees E ON O.EmployeeID = E.EmployeeID
+INNER JOIN Customers C ON C.CustomerID = O.CustomerID
+GROUP BY E.EmployeeID, E.FirstName + E.LastName, (YEAR(GETDATE()) - YEAR(E.BirthDate))
+
+/*i) Establecer la cantidad de órdenes por país y su representación en porcentaje respecto a la cantidad total de órdenes. Nota: La 
+Sumatoria en porcentaje tiene que ser 100.
+*/
+SELECT DISTINCT ShipCountry, COUNT(OrderID) [Cantidad de ordenes], CONVERT(VARCHAR, CAST(COUNT(ShipCountry) * 100.0 / (SELECT COUNT(OrderID) FROM Orders) AS DECIMAL(18, 2))) + ' %' Porcentaje
+FROM Orders
+GROUP BY ShipCountry
+ORDER BY COUNT(OrderID) DESC
+
+/* j) Consultar la cantidad de órdenes realizadas por país y ciudad,
+ordenarlo por país y cantidad de órdenes en forma descendente
+*/
+SELECT ShipCountry, ShipCity, COUNT(OrderID) [Cantidad de ordenes]
+FROM Orders
+GROUP BY ShipCountry, ShipCity
+ORDER BY ShipCountry, COUNT(OrderID) DESC
+
+/* k) Tomando de referencia el ejercicio anterior, consultar la cantidad
+de órdenes realizadas por país y ciudad, mostrando únicamente
+el país con la ciudad que ha realizado la mayor cantidad de
+órdenes. 
+*/
+
+SELECT ShipCountry, ShipCity, [Cantidad de ordenes] [Cantida maxima]
+FROM (SELECT *, RANK() OVER(PARTITION BY ShipCountry ORDER BY [Cantidad de ordenes] DESC) AUX
+FROM (SELECT ShipCountry, ShipCity, COUNT(OrderID) [Cantidad de ordenes]
+	FROM Orders
+	GROUP BY ShipCountry, ShipCity) CC) TEMP
+WHERE TEMP.AUX = 1
+ORDER BY ShipCountry, [Cantidad de ordenes] DESC
+
+/* n) Realizar un procedimiento almacenado que reciba como
+parámetro el año. Calcular el promedio de recaudación basado en
+12 meses y presente cual es la recaudación del mes más cercana 
+al promedio.
+*/
+
+CREATE PROCEDURE mesMasCercanoARecaudacionAMedia @anio int
+AS
+	DECLARE @recaudacionPromedioAnual FLOAT
+	SET @recaudacionPromedioAnual = (SELECT [Recaudacion anual] / 12 [Recaudacion anual promedio]
+	FROM (SELECT SUM(CASE WHEN YEAR(O.OrderDate) = @anio THEN (OD.UnitPrice * OD.Quantity - (OD.UnitPrice * OD.Quantity * OD.Discount)) ELSE 0 END) [Recaudacion anual]
+		FROM Orders O
+	JOIN [Order Details] OD ON OD.OrderID = O.OrderID) AUX)
+
+	SELECT TOP(1) *
+	FROM (SELECT  @anio Anio, MONTH(O.OrderDate) Mes, DateName( month , DateAdd( month , MONTH(O.OrderDate) , 0 ) - 1 ) [Nombre del mes], @recaudacionPromedioAnual [Recaudacion promedio anual], SUM(CASE WHEN YEAR(O.OrderDate) = @anio THEN (OD.UnitPrice * OD.Quantity - (OD.UnitPrice * OD.Quantity * OD.Discount)) ELSE NULL END) [Recaudacion mensual]
+		FROM Orders O
+		JOIN [Order Details] OD ON OD.OrderID = O.OrderID
+		GROUP BY MONTH(O.OrderDate)
+	) TA
+	WHERE [Recaudacion mensual] IS NOT NULL
+	ORDER BY ABS([Recaudacion promedio anual] - [Recaudacion mensual]) ASC
+
+EXEC mesMasCercanoARecaudacionAMedia 1997
