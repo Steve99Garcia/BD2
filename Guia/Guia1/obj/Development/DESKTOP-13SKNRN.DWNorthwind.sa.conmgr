@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<DTS:ConnectionManager xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:ObjectName="DESKTOP-13SKNRN.DWNorthwind.sa"
+  DTS:DTSID="{EF753981-D5A6-4F01-ACBF-4CCF81914529}"
+  DTS:CreationName="OLEDB">
+  <DTS:ObjectData>
+    <DTS:ConnectionManager
+      DTS:ConnectRetryCount="1"
+      DTS:ConnectRetryInterval="5"
+      DTS:ConnectionString="Data Source=DESKTOP-13SKNRN;User ID=sa;Initial Catalog=DWNorthwind;Provider=SQLNCLI11.1;Persist Security Info=True;Auto Translate=False;Application Name=SSIS-Guia1-{EF753981-D5A6-4F01-ACBF-4CCF81914529}DESKTOP-13SKNRN.DWNorthwind.sa;">
+      <DTS:Password
+        DTS:Name="Password"
+        Sensitive="1">AQAAANCMnd8BFdERjHoAwE/Cl+sBAAAASXPvekbLBUGvfULcqO0hlQAAAAACAAAAAAAQZgAAAAEAACAAAADV7aCefPLyu1btuvwsTnKHzc8VzOvi+Z0smalPsCdcPQAAAAAOgAAAAAIAACAAAACstUQj/2EaSwCa7NwrOyXz2dvC6HeUSTFIpyhP6f1nXYAAAAD5+WgPREUbPcn8ePqAl7p8Ux9IzRZ/q2zzckds5cSVwQkB7wYsw0CKKnbvXWJSJ6DrutXSG5wr34ke9zLvYCBsFdlRP9RQEHHjlMgIH/w51e8KPMbfxxagiCn2c/oW33Qx5SH6PKyYz2wCi4Mt2cQvNyWBPJM9l4cVpLpm5p8ZckAAAABzoIXWIlL2A6r/wEarDysRcvCJm6jWp7O6QKr2NaOWwriIU0x8DeDtKbNQ1gIMoCsRckGV7X3mlXMM+SmUTgGX</DTS:Password>
+    </DTS:ConnectionManager>
+  </DTS:ObjectData>
+</DTS:ConnectionManager>
