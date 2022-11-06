@@ -7,3 +7,4 @@ Select * from Programa
 Use GestionBecasDW
 
 Select DISTINCT * from DimPrograma where IDPrograma=1
+
